@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - HiQuery</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; font-family: 'Lato', sans-serif; color: #333; overflow: hidden; background-color: #e3f2fd; }
+        .floating-icons { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+        .floating-icons span { position: absolute; color: rgba(0, 77, 64, 0.08); font-size: 3em; animation: floatUp 20s linear infinite; bottom: -100px; opacity: 0; }
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 0; }
+            10%, 90% { opacity: 1; }
+            100% { transform: translateY(-110vh); opacity: 0; }
+        }
+        .hero-container { position: relative; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .header { position: absolute; top: 0; left: 0; width: 100%; padding: 20px 50px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-family: 'Special Elite', cursive; font-size: 2em; color: #004d40; }
+        .nav-links a { color: #004d40; text-decoration: none; font-size: 1.1em; font-weight: bold; padding: 8px 18px; border: 2px solid #004d40; border-radius: 5px; margin-left: 20px; transition: all 0.3s ease; }
+        .nav-links a:hover { background-color: #004d40; color: white; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .hero-content h1 { font-family: 'Special Elite', cursive; font-size: 4.5em; margin-bottom: 20px; color: #004d40; border-right: .15em solid #004d40; white-space: nowrap; overflow: hidden; }
+        .typing-effect { animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite; }
+        @keyframes typing { from { width: 0 } to { width: 100% } }
+        @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: #004d40; } }
+        .hero-content p { font-size: 1.3em; max-width: 600px; line-height: 1.6; opacity: 0; animation: fadeIn 1s ease 4s forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="floating-icons"></div>
+    <div class="hero-container">
+        <header class="header">
+            <div class="logo">HiQuery</div>
+            <div class="nav-links">
+                <a href="/login">Login</a>
+                <a href="/signup">Sign Up</a>
+            </div>
+        </header>
+        <div class="hero-content">
+            <h1 class="typing-effect">Ask. Learn. Repeat.</h1>
+            <p>Your personal space to unravel complex topics. HiQuery is a quiet corner for focused learning.</p>
+        </div>
+    </div>
+    <script>
+        const iconsContainer = document.querySelector('.floating-icons');
+        const icons = ['∫', 'ƒ(x)', '∂y/∂x', '</>', '{}', 'π', 'Σ', 'λ', 'const'];
+        for (let i = 0; i < 20; i++) {
+            let icon = document.createElement('span');
+            icon.textContent = icons[Math.floor(Math.random() * icons.length)];
+            icon.style.left = `${Math.random() * 100}vw`;
+            icon.style.animationDelay = `${Math.random() * 20}s`;
+            icon.style.animationDuration = `${15 + Math.random() * 10}s`;
+            iconsContainer.appendChild(icon);
+        }
+    </script>
+</body>
+</html>
+

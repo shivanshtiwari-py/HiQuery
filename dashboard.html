@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - HiQuery</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Lato', sans-serif; background-color: #e3f2fd; margin: 0; padding: 0; }
+        .floating-icons { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+        .floating-icons span { position: absolute; color: rgba(0, 77, 64, 0.08); font-size: 3em; animation: floatUp 20s linear infinite; bottom: -100px; opacity: 0; }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 0; } 10%, 90% { opacity: 1; } 100% { transform: translateY(-110vh); opacity: 0; } }
+        .main-container { max-width: 1200px; margin: 40px auto; padding: 20px; }
+        .container { background-color: #fdfdfd; padding: 40px; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #dcdcdc; }
+        h1, h2, h3 { font-family: 'Special Elite', cursive; color: #004d40; }
+        .logout { float: right; text-decoration: none; color: #c62828; font-weight: bold; }
+        hr { border: none; border-top: 2px dashed #b0bec5; margin: 30px 0; }
+        .action-btn { background-color: #00796b; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; transition: all 0.3s ease; }
+        .action-btn:hover { background-color: #004d40; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1);}
+        .topic-input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; }
+        .student-dashboard-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 40px; }
+        .ai-feature-box { margin-bottom: 20px; }
+        .progress-card { text-align: center; background-color: #f5f5f5; padding: 20px; border-radius: 8px; }
+        .progress-card .stat-number { font-size: 3em; font-weight: bold; color: #004d40; }
+        .progress-card .stat-label { margin-top: -10px; font-size: 1em; color: #555; }
+        .flashcard-container { display: flex; flex-wrap: wrap; gap: 15px; perspective: 1000px; min-height: 120px;}
+        .flashcard { width: 180px; height: 120px; position: relative; cursor: pointer; }
+        .flashcard-inner { position: absolute; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
+        .flashcard.is-flipped .flashcard-inner { transform: rotateY(180deg); }
+        .flashcard-front, .flashcard-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; justify-content: center; align-items: center; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background: #fff; box-sizing: border-box; }
+        .flashcard-back { background: #f0f0f0; transform: rotateY(180deg); }
+        .struggle-alert-box { background-color: #fff3e0; border: 1px solid #ffcc80; padding: 20px; margin-bottom: 30px; border-radius: 4px; }
+        .struggle-alert-box h2 { color: #e65100; }
+        .struggling-student { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #ffe0b2; }
+        .insight-btn { background-color: #ffa726; border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .insight-display { font-size: 0.9em; margin-top: 10px; background: #fff; padding: 8px; border-radius: 4px; }
+        .atom-loader { display: none; margin: 20px auto; width: 60px; height: 60px; position: relative; }
+        .atom-loader .nucleus { width: 12px; height: 12px; background: #00796b; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .atom-loader .electron { width: 100%; height: 100%; border: 2px solid #00796b; border-radius: 50%; position: absolute; animation: spin 2s linear infinite; }
+        .atom-loader .electron::before { content: ''; display: block; width: 8px; height: 8px; background: #00796b; border-radius: 50%; position: absolute; top: -4px; left: 50%; transform: translateX(-50%); }
+        .atom-loader .electron:nth-child(2) { transform: rotate(60deg); }
+        .atom-loader .electron:nth-child(3) { transform: rotate(-60deg); }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .ai-response-area { display: none; line-height: 1.6; }
+        .quiz-question { margin-bottom: 20px; } .quiz-options label { display: block; margin: 5px 0 5px 25px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="floating-icons"></div>
+    <div class="main-container">
+        <div class="container">
+            <a href="/logout" class="logout">Logout</a>
+            <h1>Welcome, {{ user.name }}</h1>
+            <p>Role: <strong>{{ user.role }}</strong></p>
+            <hr>
+
+            {% if user.role == 'admin' %}
+            <!-- ADMIN VIEW -->
+            {% if struggling_students %}
+            <div class="struggle-alert-box">
+                <h2>Struggle Alerts</h2>
+                <p>These students may need attention based on recent quiz performance.</p>
+                {% for student in struggling_students %}
+                <div class="struggling-student">
+                    <div><strong>{{ student.name }}</strong><br><small>{{ student.struggle_reason }}</small></div>
+                    <button class="insight-btn" onclick="getInsight('{{ student.uid }}')">Get AI Insight</button>
+                </div>
+                <div id="insight-{{ student.uid }}" class="insight-display" style="display:none;"></div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="admin-view">
+                <h2>Full Student Roster</h2>
+                {% for student in students %}
+                <div class="struggling-student"> <!-- Reusing style for consistency -->
+                     <div><strong>{{ student.name }}</strong><br><small>{{ student.email }}</small></div>
+                     <form action="/delete_user/{{ student.uid }}" method="POST" onsubmit="return confirm('Are you sure?');" style="display: inline; margin-left: 10px;">
+                        <button type="submit" class="action-btn" style="background-color:#c62828;">Delete</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <!-- STUDENT VIEW -->
+            <div class="student-dashboard-grid">
+                <div class="left-column">
+                    <div class="ai-feature-box"><h2>My Progress</h2><div class="progress-card"><div class="stat-number" id="streak-number">0</div><div class="stat-label">Day Study Streak</div></div><canvas id="top-topics-chart" style="margin-top: 20px;"></canvas></div>
+                    <div class="ai-feature-box"><h2>Smart Flashcards</h2><form id="flashcard-form"><input type="text" name="topic" class="topic-input" required placeholder="Topic for flashcards..."><br><br><button type="submit" class="action-btn">Generate Deck</button></form><div class="atom-loader" id="flashcard-loader"><div class="nucleus"></div><div class="electron"></div><div class="electron"></div></div><div id="flashcard-container" class="flashcard-container"></div></div>
+                </div>
+                <div class="right-column">
+                    <div class="ai-feature-box"><h2>AI Tutor</h2><form id="tutor-form"><textarea name="prompt" rows="3" placeholder="Ask a question..."></textarea><br><br><button type="submit" class="action-btn">Ask HiQuery</button></form><div class="atom-loader" id="tutor-loader"><div class="nucleus"></div><div class="electron"></div><div class="electron"></div></div><div id="tutor-response" class="ai-response-area"></div></div>
+                    <div class="ai-feature-box"><h2>Study Planner</h2><form id="study-plan-form"><input type="text" name="topic" class="topic-input" required placeholder="Topic for a plan..."><br><br><button type="submit" class="action-btn">Generate Plan</button></form><div class="atom-loader" id="plan-loader"><div class="nucleus"></div><div class="electron"></div><div class="electron"></div></div><div id="study-plan-response" class="ai-response-area"></div></div>
+                    <div class="ai-feature-box"><h2>AI Quiz Generator</h2><form id="quiz-generator-form"><input type="text" name="topic" id="quiz-topic-input" class="topic-input" required placeholder="Topic for a quiz..."><br><br><button type="submit" class="action-btn">Generate Quiz</button></form><div class="atom-loader" id="quiz-loader"><div class="nucleus"></div><div class="electron"></div><div class="electron"></div></div><div id="quiz-container" style="margin-top: 20px;"></div><div id="quiz-result-container" class="ai-response-area"></div></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <script>
+        const iconsContainer = document.querySelector('.floating-icons');
+        const icons = ['∫', 'ƒ(x)', '∂y/∂x', '</>', '{}', 'π', 'Σ', 'λ', 'const'];
+        for (let i = 0; i < 20; i++) { let icon = document.createElement('span'); icon.textContent = icons[Math.floor(Math.random() * icons.length)]; icon.style.left = `${Math.random() * 100}vw`; icon.style.animationDelay = `${Math.random() * 20}s`; icon.style.animationDuration = `${15 + Math.random() * 10}s`; iconsContainer.appendChild(icon); }
+
+        function typeWriter(element, text, speed = 20) {
+            element.innerHTML = ""; let i = 0;
+            function type() { if (i < text.length) { element.innerHTML += text.charAt(i); i++; setTimeout(type, speed); } }
+            type();
+        }
+
+        function extractJson(text) {
+            const match = text.match(/```json\s*([\s\S]*?)\s*```/);
+            if (match && match[1]) {
+                return JSON.parse(match[1]);
+            }
+            return JSON.parse(text); // Fallback for clean JSON
+        }
+
+        if ("{{ user.role }}" === "student") {
+            document.addEventListener('DOMContentLoaded', async () => {
+                try { const res = await fetch('/get_progress_data'); const data = await res.json(); document.getElementById('streak-number').textContent = data.streak; renderTopTopicsChart(data.top_topics); } catch (e) { console.error("Could not load progress data"); }
+            });
+            let topicsChart;
+            function renderTopTopicsChart(topics) { const ctx = document.getElementById('top-topics-chart').getContext('2d'); if(topicsChart) { topicsChart.destroy(); } topicsChart = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(topics), datasets: [{ label: 'Quizzes Taken', data: Object.values(topics), backgroundColor: 'rgba(0, 121, 107, 0.5)', borderColor: 'rgba(0, 77, 64, 1)', borderWidth: 1 }] }, options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false }, title: { display: true, text: 'Your Top Topics' } } } }); }
+
+            async function handleFormSubmit(formId, loaderId, responseId, endpoint) {
+                document.getElementById(formId).addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const responseDiv = document.getElementById(responseId);
+                    const loader = document.getElementById(loaderId);
+                    responseDiv.style.display = 'none';
+                    loader.style.display = 'block';
+                    const formData = new FormData(e.target);
+                    try { const res = await fetch(endpoint, { method: 'POST', body: formData }); if (!res.ok) throw new Error('Server error'); const text = await res.text(); loader.style.display = 'none'; responseDiv.style.display = 'block'; typeWriter(responseDiv, text); } catch (err) { loader.style.display = 'none'; responseDiv.style.display = 'block'; responseDiv.textContent = `Error: ${err.message}`; }
+                });
+            }
+            handleFormSubmit('tutor-form', 'tutor-loader', 'tutor-response', '/ask');
+            handleFormSubmit('study-plan-form', 'plan-loader', 'study-plan-response', '/generate_study_plan');
+
+            document.getElementById('flashcard-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const container = document.getElementById('flashcard-container');
+                const loader = document.getElementById('flashcard-loader');
+                container.innerHTML = '';
+                loader.style.display = 'block';
+                try { const res = await fetch('/generate_flashcards', { method: 'POST', body: new FormData(e.target) }); const text = await res.text(); const data = extractJson(text); if(data.error) throw new Error(data.error); loader.style.display = 'none'; data.flashcards.forEach(card => { const cardEl = document.createElement('div'); cardEl.className = 'flashcard'; cardEl.innerHTML = `<div class="flashcard-inner"><div class="flashcard-front">${card.front}</div><div class="flashcard-back">${card.back}</div></div>`; cardEl.addEventListener('click', () => cardEl.classList.toggle('is-flipped')); container.appendChild(cardEl); }); } catch (err) { loader.style.display = 'none'; container.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`; }
+            });
+            
+            const quizGenForm = document.getElementById('quiz-generator-form');
+            const quizContainer = document.getElementById('quiz-container');
+            const quizResultContainer = document.getElementById('quiz-result-container');
+            let currentQuizData;
+            quizGenForm.addEventListener('submit', async function(e){
+                e.preventDefault();
+                const loader = document.getElementById('quiz-loader');
+                quizContainer.innerHTML = '';
+                quizResultContainer.style.display = 'none';
+                loader.style.display = 'block';
+                const formData = new FormData(e.target);
+                try {
+                    const res = await fetch('/generate_quiz', {method:'POST', body: formData});
+                    const text = await res.text();
+                    const data = extractJson(text);
+                    if(data.error) throw new Error(data.error);
+                    loader.style.display = 'none';
+                    currentQuizData = data.questions;
+                    currentQuizData.topic = formData.get('topic');
+                    displayQuiz(currentQuizData);
+                } catch(err){
+                    loader.style.display = 'none';
+                    quizContainer.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
+                }
+            });
+
+            function displayQuiz(questions) {
+                let quizHTML = '<form id="quiz-form">';
+                questions.forEach((q, index) => { quizHTML += `<div class="quiz-question"><strong>${index + 1}. ${q.question}</strong><div class="quiz-options">${q.options.map(o => `<label><input type="radio" name="question-${index}" value="${o}" required> ${o}</label>`).join('')}</div></div>`; });
+                quizHTML += '<button type="submit" class="action-btn">Submit Quiz</button></form>';
+                quizContainer.innerHTML = quizHTML;
+                document.getElementById('quiz-form').addEventListener('submit', handleQuizSubmit);
+            }
+
+            async function handleQuizSubmit(e){
+                e.preventDefault();
+                let score = 0;
+                const incorrectQuestions = [];
+                currentQuizData.forEach((q, index) => {
+                    const selected = e.target.querySelector(`input[name="question-${index}"]:checked`);
+                    if(selected && selected.value === q.answer) score++;
+                    else incorrectQuestions.push(q.question);
+                });
+                quizContainer.innerHTML = '';
+                quizResultContainer.style.display = 'block';
+                typeWriter(quizResultContainer, `Your score: ${score}/${currentQuizData.length}. Fetching feedback...`);
+                const res = await fetch('/get_quiz_suggestion', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({topic: currentQuizData.topic, score, incorrectQuestions})});
+                const data = await res.json();
+                typeWriter(quizResultContainer, `Your score: ${score}/${currentQuizData.length}.\n\n${data.suggestion}`);
+            }
+        }
+
+        async function getInsight(studentId) {
+            const insightDiv = document.getElementById(`insight-${studentId}`);
+            insightDiv.style.display = 'block';
+            typeWriter(insightDiv, 'Getting AI insight...');
+            try { const res = await fetch(`/get_struggle_insight/${studentId}`, { method: 'POST' }); const text = await res.text(); typeWriter(insightDiv, text); } catch (e) { insightDiv.textContent = 'Could not fetch insight.'; }
+        }
+    </script>
+</body>
+</html>
+
+    
